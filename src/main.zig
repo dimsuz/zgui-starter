@@ -22,7 +22,7 @@ pub fn main() !void {
         std.os.chdir(path) catch {};
     }
 
-    const window = zglfw.Window.create(800, 500, window_title, null) catch {
+    const window = zglfw.Window.create(1200, 800, window_title, null) catch {
         std.log.err("Failed to create window.", .{});
         return;
     };
@@ -58,6 +58,8 @@ pub fn main() !void {
 
     zgui.getStyle().scaleAllSizes(scale_factor);
 
+    var showDemo = false;
+
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
 
@@ -72,10 +74,13 @@ pub fn main() !void {
 
         if (zgui.begin("My window", .{})) {
             if (zgui.button("Press me!", .{ .w = 200.0 })) {
-                std.debug.print("Button pressed\n", .{});
+                showDemo = true;
             }
         }
         zgui.end();
+        if (showDemo) {
+            zgui.showDemoWindow(&showDemo);
+        }
 
         const swapchain_texv = gctx.swapchain.getCurrentTextureView();
         defer swapchain_texv.release();
