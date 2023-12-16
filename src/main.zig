@@ -6,7 +6,79 @@ const zgui = @import("zgui");
 
 const assets_dir = @import("build-options").assets_dir;
 
-const window_title = "zig-gamedev: minimal zgpu zgui";
+const window_title = "Free Away Forum Admin";
+
+const State = struct {
+    showDemo: bool,
+    user_window_size: [2]f32,
+    users: []const User,
+};
+
+const User = struct {
+    id: u64,
+    username: []const u8,
+    avatar_template: []const u8,
+    email: []const u8,
+    is_frozen: bool,
+    is_blocked: bool,
+    has_free_access: bool,
+    end_date: i64,
+};
+
+var state = State{
+    .showDemo = false,
+    .user_window_size = [2]f32{ 400.0, 0.0 },
+    .users = &.{
+        .{
+            .id = 1,
+            .username = "Dima",
+            .avatar_template = "",
+            .email = "mail@dimsuz.ru",
+            .is_frozen = false,
+            .is_blocked = false,
+            .has_free_access = true,
+            .end_date = 0,
+        },
+        .{
+            .id = 2,
+            .username = "Mint",
+            .avatar_template = "",
+            .email = "mail1@dimsuz.ru",
+            .is_frozen = false,
+            .is_blocked = false,
+            .has_free_access = true,
+            .end_date = 0,
+        },
+    },
+};
+
+fn ui_users(window_w: i32) void {
+    zgui.setNextWindowPos(.{ .x = 0.0, .y = 0.0, .cond = .first_use_ever });
+    state.user_window_size[1] = @floatFromInt(window_w);
+    zgui.setNextWindowSize(.{ .w = state.user_window_size[0], .h = state.user_window_size[1] });
+
+    if (zgui.begin("Users", .{ .flags = .{ .no_move = true } })) {
+        for (state.users) |u| {
+            ui_user_list_item(u);
+        }
+        if (zgui.button("Press me!", .{})) {
+            state.showDemo = true;
+        }
+    }
+    state.user_window_size[0] = zgui.getWindowSize()[0];
+    zgui.end();
+    if (state.showDemo) {
+        zgui.showDemoWindow(&state.showDemo);
+    }
+}
+
+fn ui_user_list_item(user: User) void {
+    if (zgui.beginChildId(zgui.getStrId(user.email), .{ .border = true, .h = 80.0 })) {
+        zgui.text("{s}", .{user.username});
+        zgui.text("{s}", .{user.email});
+    }
+    zgui.endChild();
+}
 
 pub fn main() !void {
     zglfw.init() catch {
@@ -58,8 +130,6 @@ pub fn main() !void {
 
     zgui.getStyle().scaleAllSizes(scale_factor);
 
-    var showDemo = false;
-
     while (!window.shouldClose() and window.getKey(.escape) != .press) {
         zglfw.pollEvents();
 
@@ -68,19 +138,7 @@ pub fn main() !void {
             gctx.swapchain_descriptor.height,
         );
 
-        // Set the starting window position and size to custom values
-        zgui.setNextWindowPos(.{ .x = 20.0, .y = 20.0, .cond = .first_use_ever });
-        zgui.setNextWindowSize(.{ .w = -1.0, .h = -1.0, .cond = .first_use_ever });
-
-        if (zgui.begin("My window", .{})) {
-            if (zgui.button("Press me!", .{ .w = 200.0 })) {
-                showDemo = true;
-            }
-        }
-        zgui.end();
-        if (showDemo) {
-            zgui.showDemoWindow(&showDemo);
-        }
+        ui_users(window.getSize()[0]);
 
         const swapchain_texv = gctx.swapchain.getCurrentTextureView();
         defer swapchain_texv.release();
